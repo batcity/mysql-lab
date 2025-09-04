@@ -15,3 +15,4 @@ services:
     volumes:
       - ./data:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d
+    command: --local-infile=1
