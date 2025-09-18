@@ -9,11 +9,25 @@
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
-        <!-- MySQL JDBC driver -->
+        <!-- MySQL JDBC driver (use relocated coordinates) -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <!-- Point Maven to the simplified source directory -->
+        <sourceDirectory>${project.basedir}/indexing</sourceDirectory>
+
+        <plugins>
+            <!-- Ensure we can run Java classes with mvn exec:java -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.1</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>

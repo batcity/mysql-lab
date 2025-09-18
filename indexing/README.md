@@ -45,10 +45,10 @@ Measure the effect of adding an index in MySQL by timing a filtered query before
 ## RUN:
 
 ```bash
-mvn compile exec:java -Dexec.mainClass="com.mysql.lab.IndexBenchmark"
+mvn compile exec:java -Dexec.mainClass="IndexBenchmark"
 ```
 
 ## Here's a sample result showing difference in performance:
 
-![Sample benchmark result showing performance difference](image.png)
+![Sample benchmark result showing performance difference](TODO)
 

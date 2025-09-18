@@ -1,0 +1,19 @@
+# Maven build output
+target/
+
+# MySQL data volume
+data/
+
+# Temporary files
+*.log
+*.tmp
+*.csv
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
