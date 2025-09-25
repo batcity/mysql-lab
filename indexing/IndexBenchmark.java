@@ -2,7 +2,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.*;
-import java.util.logging.Logger;
 
 public class IndexBenchmark {
 
@@ -11,14 +10,16 @@ public class IndexBenchmark {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/labdb?allowLoadLocalInfile=true";
     private static final String ROOT_USER = "root";
     private static final String ROOT_PASS = "root";
-    private static final Logger logger = Logger.getLogger("GoodIndexBenchmark");
 
     public static void main(String[] args) {
+        long timeWithoutIndex = 0;
+        long timeWithIndex = 0;
+
         try (Connection conn = DriverManager.getConnection(DB_URL, ROOT_USER, ROOT_PASS);
              Statement stmt = conn.createStatement()) {
 
-            // Setup table
-            logger.info("Setting up database for good index demo...");
+            section("Setup");
+            log("Setting up database for good index demo...");
             stmt.execute("CREATE TABLE IF NOT EXISTS employees_good (" +
                     "id INT AUTO_INCREMENT PRIMARY KEY, " +
                     "name VARCHAR(50), " +
@@ -31,31 +32,31 @@ public class IndexBenchmark {
                 stmt.execute("DROP INDEX idx_name ON employees_good");
             } catch (SQLException ignored) { }
 
-            // Generate + load data
-            logger.info("Generating and loading data...");
+            section("Data Generation");
+            log("Generating and loading data...");
             generateCSVAndLoad(stmt);
 
             // Pick one employee to query
             String targetName = "Employee500000";
 
             // Benchmark without index
-            logger.info("Running lookup query without index...");
+            section("Benchmark Without Index");
             explainQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
-            long timeWithoutIndex = timeQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
-            logger.info("Time without index: " + timeWithoutIndex + " ms");
+            timeWithoutIndex = timeQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
+            result("Time without index: " + timeWithoutIndex + " ms");
 
             // Add index
+            log("Creating index on name...");
             stmt.execute("CREATE INDEX idx_name ON employees_good(name)");
-            logger.info("Index created on name.");
 
             // Benchmark with index
-            logger.info("Running lookup query with index...");
+            section("Benchmark With Index");
             explainQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
-            long timeWithIndex = timeQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
-            logger.info("Time with index: " + timeWithIndex + " ms");
+            timeWithIndex = timeQuery(stmt, "SELECT * FROM employees_good WHERE name='" + targetName + "'");
+            result("Time with index: " + timeWithIndex + " ms");
 
             stmt.execute("TRUNCATE TABLE employees_good");
-            logger.info("Benchmark finished. Table cleared.");
+            log("Benchmark finished. Table cleared.");
 
         } catch (SQLException | IOException e) {
             e.printStackTrace();
@@ -63,6 +64,14 @@ public class IndexBenchmark {
             // cleanup CSV
             File csv = new File(CSV_FILE);
             if (csv.exists()) csv.delete();
+        }
+
+        // Show summary
+        section("Benchmark Summary");
+        System.out.println(" - Time without index: " + timeWithoutIndex + " ms");
+        System.out.println(" - Time with index:    " + timeWithIndex + " ms");
+        if (timeWithIndex > 0) {
+            System.out.println(" 🎯 Speedup: ~" + (timeWithoutIndex / timeWithIndex) + "x faster with index.");
         }
     }
 
@@ -75,7 +84,7 @@ public class IndexBenchmark {
                         depts[i % depts.length] + "," +
                         (i % 100_000) + "\n");
                 if (i % 100_000 == 0) {
-                    logger.info("Generated " + i + " rows...");
+                    result("Generated " + i + " rows...");
                 }
             }
         }
@@ -97,19 +106,35 @@ public class IndexBenchmark {
 
     private static void explainQuery(Statement stmt, String sql) throws SQLException {
         try (ResultSet rs = stmt.executeQuery("EXPLAIN " + sql)) {
-            StringBuilder table = new StringBuilder();
-            table.append("id | type | key | rows | extra\n");
+            System.out.println("\n📊 Query Plan:");
+            System.out.printf("%-3s | %-10s | %-10s | %-8s | %-20s%n",
+                    "id", "type", "key", "rows", "extra");
+            System.out.println("----+------------+------------+----------+----------------------");
 
             while (rs.next()) {
-                table.append(String.format("%s | %s | %s | %s | %s\n",
+                System.out.printf("%-3s | %-10s | %-10s | %-8s | %-20s%n",
                         rs.getString("id"),
                         rs.getString("type"),
                         rs.getString("key"),
                         rs.getString("rows"),
-                        rs.getString("Extra")));
+                        rs.getString("Extra"));
             }
-
-            logger.info("\n" + table.toString());
+            System.out.println();
         }
+    }
+
+    // === Utility methods for clean logging ===
+    private static void section(String title) {
+        System.out.println("\n==============================");
+        System.out.println(" " + title);
+        System.out.println("==============================");
+    }
+
+    private static void log(String message) {
+        System.out.println("👉 " + message);
+    }
+
+    private static void result(String message) {
+        System.out.println("✅ " + message);
     }
 }

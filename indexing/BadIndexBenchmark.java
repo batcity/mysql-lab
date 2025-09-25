@@ -3,7 +3,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Random;
-import java.util.logging.Logger;
 
 public class BadIndexBenchmark {
 
@@ -12,14 +11,16 @@ public class BadIndexBenchmark {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/labdb?allowLoadLocalInfile=true";
     private static final String ROOT_USER = "root";
     private static final String ROOT_PASS = "root";
-    private static final Logger logger = Logger.getLogger("IndexBenchmark");
 
     public static void main(String[] args) {
+        long timeWithoutIndex = 0;
+        long timeWithIndex = 0;
+
         try (Connection conn = DriverManager.getConnection(DB_URL, ROOT_USER, ROOT_PASS);
              Statement stmt = conn.createStatement()) {
 
-            // Administrative setup
-            logger.info("Setting up database environment...");
+            section("Setup");
+            log("Setting up database environment...");
             stmt.execute("CREATE TABLE IF NOT EXISTS employees (" +
                     "id INT AUTO_INCREMENT PRIMARY KEY, " +
                     "name VARCHAR(50), " +
@@ -27,48 +28,64 @@ public class BadIndexBenchmark {
                     "salary INT)");
             stmt.execute("TRUNCATE TABLE employees");
 
-            // Drop leftover index if it exists
+            // Drop leftover index if exists
             try {
                 stmt.execute("DROP INDEX idx_department ON employees");
-                logger.info("Existing index dropped.");
+                log("Dropped existing index.");
             } catch (SQLException e) {
-                logger.info("No existing index to drop.");
+                log("No existing index to drop.");
             }
 
-            logger.info("Generating and loading data...");
+            section("Data Generation");
+            log("Generating and loading data...");
             generateCSVAndLoad(stmt);
 
             // Benchmark without index
-            logger.info("Running query without index...");
+            section("Benchmark Without Index");
             explainQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
-            long timeWithoutIndex = timeQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
-            logger.info("Time without index: " + timeWithoutIndex + " ms");
+            timeWithoutIndex = timeQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
+            result("Time without index: " + timeWithoutIndex + " ms");
 
-            // Create index
+            // Add index
+            log("Creating index on department...");
             stmt.execute("CREATE INDEX idx_department ON employees(department)");
-            logger.info("Index created.");
 
             // Benchmark with index
-            logger.info("Running query with index...");
+            section("Benchmark With Index");
             explainQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
-            long timeWithIndex = timeQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
-            logger.info("Time with index: " + timeWithIndex + " ms");
+            timeWithIndex = timeQuery(stmt, "SELECT * FROM employees WHERE department='IT'");
+            result("Time with index: " + timeWithIndex + " ms");
 
-            // Cleanup table
+            // Cleanup
             stmt.execute("TRUNCATE TABLE employees");
-            logger.info("Benchmark finished. Table cleared.");
+            log("Benchmark finished. Table cleared.");
 
         } catch (SQLException | IOException e) {
             e.printStackTrace();
         } finally {
-            // Cleanup CSV file
+            // cleanup CSV
             File csv = new File(CSV_FILE);
-            if (csv.exists() && csv.delete()) {
-                logger.info("Temporary CSV file deleted: " + CSV_FILE);
-            } else if (csv.exists()) {
-                logger.warning("Could not delete temporary CSV file.");
+            if (csv.exists()) csv.delete();
+        }
+
+        // Show summary
+        section("Benchmark Summary");
+        System.out.println(" - Time without index: " + timeWithoutIndex + " ms");
+        System.out.println(" - Time with index:    " + timeWithIndex + " ms");
+        if (timeWithIndex > 0) {
+            if (timeWithIndex < timeWithoutIndex) {
+                System.out.println(" 🎯 Index helped: ~" + (timeWithoutIndex / timeWithIndex) + "x faster with index.");
+            } else {
+                System.out.println(" ⚠️  Index hurt performance: query got slower with index!");
             }
         }
+
+        // Add clear conclusion
+        section("Conclusion");
+        System.out.println("👉 The index on 'department' actually made the query slower!");
+        System.out.println("   Why? Because 'department' has very few distinct values,");
+        System.out.println("   so MySQL ends up fetching hundreds of thousands of rows through the index,");
+        System.out.println("   which is slower than scanning the whole table sequentially.");
     }
 
     private static void generateCSVAndLoad(Statement stmt) throws IOException, SQLException {
@@ -81,12 +98,12 @@ public class BadIndexBenchmark {
                         depts[rand.nextInt(depts.length)] + "," +
                         rand.nextInt(100_000) + "\n");
                 if (i % 100_000 == 0) {
-                    logger.info("Generated " + i + " rows...");
+                    result("Generated " + i + " rows...");
                 }
             }
         }
 
-        logger.info("Loading data into the table");
+        log("Loading data into the table...");
         stmt.execute("LOAD DATA LOCAL INFILE '" + CSV_FILE.replace("\\", "/") + "' " +
                 "INTO TABLE employees " +
                 "FIELDS TERMINATED BY ',' " +
@@ -97,31 +114,42 @@ public class BadIndexBenchmark {
     private static long timeQuery(Statement stmt, String sql) throws SQLException {
         long start = System.currentTimeMillis();
         try (ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) { }
+            while (rs.next()) { } // simulate reading
         }
         return System.currentTimeMillis() - start;
     }
 
     private static void explainQuery(Statement stmt, String sql) throws SQLException {
         try (ResultSet rs = stmt.executeQuery("EXPLAIN " + sql)) {
-            ResultSetMetaData meta = rs.getMetaData();
-            int colCount = meta.getColumnCount();
+            System.out.println("\n📊 Query Plan:");
+            System.out.printf("%-3s | %-10s | %-15s | %-8s | %-20s%n",
+                    "id", "type", "key", "rows", "extra");
+            System.out.println("----+------------+-----------------+----------+----------------------");
 
-            // Print column headers
-            StringBuilder header = new StringBuilder();
-            for (int i = 1; i <= colCount; i++) {
-                header.append(meta.getColumnName(i)).append("\t");
-            }
-            logger.info(header.toString());
-
-            // Print rows
             while (rs.next()) {
-                StringBuilder row = new StringBuilder();
-                for (int i = 1; i <= colCount; i++) {
-                    row.append(rs.getString(i)).append("\t");
-                }
-                logger.info(row.toString());
+                System.out.printf("%-3s | %-10s | %-15s | %-8s | %-20s%n",
+                        rs.getString("id"),
+                        rs.getString("type"),
+                        rs.getString("key"),
+                        rs.getString("rows"),
+                        rs.getString("Extra"));
             }
+            System.out.println();
         }
+    }
+
+    // === Utility methods for clean logging ===
+    private static void section(String title) {
+        System.out.println("\n==============================");
+        System.out.println(" " + title);
+        System.out.println("==============================");
+    }
+
+    private static void log(String message) {
+        System.out.println("👉 " + message);
+    }
+
+    private static void result(String message) {
+        System.out.println("✅ " + message);
     }
 }

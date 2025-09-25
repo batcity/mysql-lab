@@ -1,54 +1,86 @@
-
-
 # Index Benchmark Lab
 
-Measure the effect of adding an index in MySQL by timing a filtered query before and after indexing.
+This folder contains Java programs that demonstrate **good vs bad indexes** in MySQL.
 
 ---
 
-## Requirements
-- Maven installed (required to run)
-- Java 8+
-- MySQL running locally with a `labdb` database  
-  - User: `root` / Password: `root`
+## 🔎 Experiments
+
+### 1. Good Index Benchmark (`IndexBenchmark.java`)
+- Table: `employees_good`
+- Query:  
+  ```sql
+  SELECT * FROM employees_good WHERE name='Employee500000';
+  ```
+
+* Index on `name` (unique per row)
+* **Effect:** Queries become **hundreds of times faster**.
 
 ---
 
-## What it does
+### 2. Bad Index Benchmark (`BadIndexBenchmark.java`)
 
-1. Creates an `employees` table and truncates it.
-2. Generates **1,000,000 rows** to a CSV and loads them via `LOAD DATA LOCAL INFILE`.
-3. Runs:
+* Table: `employees`
+* Query:
 
-   ```sql
-   SELECT * FROM employees WHERE department='IT';
-   ```
-
-   without an index and records the time.
-4. Creates an index on `department`.
-5. Runs the same query with the index and records the time.
-6. Prints both timings and cleans up (table + temp CSV).
+  ```sql
+  SELECT * FROM employees WHERE department='IT';
+  ```
+* Index on `department` (only 5 possible values)
+* **Effect:** Index actually makes performance **worse**, because many rows share the same value.
 
 ---
 
-## What you must understand
+## 🛠️ Run the Benchmarks
 
-* **Indexes drastically improve query performance** for filtered lookups.
-* **Trade-offs:**
-
-  * Speed up reads.
-  * Consume storage.
-  * Can slow down inserts/updates.
-
----
-
-## RUN:
+From the project root:
 
 ```bash
-mvn compile exec:java -Dexec.mainClass="IndexBenchmark"
+# Good index (high-cardinality column)
+mvn exec:java -Dexec.mainClass="IndexBenchmark"
+
+# Bad index (low-cardinality column)
+mvn exec:java -Dexec.mainClass="BadIndexBenchmark"
 ```
 
-## Here's a sample result showing difference in performance:
+---
 
-![Sample benchmark result showing performance difference](TODO)
+## 📊 Sample Results
 
+**Good Index Benchmark**
+
+```
+Time without index: 436 ms
+Time with index:    1 ms
+🎯 Speedup: ~436x faster with index.
+```
+
+**Bad Index Benchmark**
+
+```
+Time without index: 485 ms
+Time with index:    1779 ms
+⚠️ Index hurt performance: query got slower with index!
+```
+
+---
+
+## 🧠 Takeaways
+
+* Use indexes wisely:
+
+  * ✅ Great for **high-cardinality columns** (unique or nearly unique values)
+  * ⚠️ Harmful on **low-cardinality columns** (few distinct values)
+* Always check with `EXPLAIN` to see how MySQL plans to use your index
+* Learn to read `EXPLAIN` output:
+
+  * `ALL` → full table scan
+  * `ref` → non-unique index lookup (can match many rows)
+  * `eq_ref` → unique index lookup (exactly one row)
+
+---
+
+## 📌 Notes
+
+* All benchmarks generate **1,000,000 rows** and clean up after themselves.
+* The `LOAD DATA LOCAL INFILE` command is used to quickly load CSV data into MySQL.
