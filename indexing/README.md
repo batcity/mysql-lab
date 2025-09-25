@@ -69,7 +69,7 @@ Time with index:    1779 ms
 
 * Use indexes wisely:
 
-  * ✅ Great for **high-cardinality columns** (unique or nearly unique values)
+  * ✅ Great for **high-cardinality columns** (large number of unique or nearly unique values)
   * ⚠️ Harmful on **low-cardinality columns** (few distinct values)
 * Always check with `EXPLAIN` to see how MySQL plans to use your index
 * Learn to read `EXPLAIN` output:
