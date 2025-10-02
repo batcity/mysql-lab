@@ -18,8 +18,8 @@
     </dependencies>
 
     <build>
-        <!-- Point Maven to the simplified source directory -->
-        <sourceDirectory>${project.basedir}/indexing</sourceDirectory>
+        <!-- Point Maven to project root so all lab folders are compiled -->
+        <sourceDirectory>${project.basedir}</sourceDirectory>
 
         <plugins>
             <!-- Ensure we can run Java classes with mvn exec:java -->

@@ -11,7 +11,7 @@ Each lab demonstrates a specific concept using **Java + Dockerized MySQL**.
 ```bash
 git clone <repo-url>
 cd mysql-lab
-docker-compose up -d    # start MySQL in Docker
+docker compose up -d    # start MySQL in Docker
 mvn compile
 ````
 
