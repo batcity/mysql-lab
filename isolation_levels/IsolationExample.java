@@ -75,7 +75,18 @@ public class IsolationExample {
             // Blocks
             // Eventually times out
             // Throws exception
-            
+            System.out.println("The serializable writer should time out since the serializable read never closes the transaction...");
+            Connection serializableReader = DriverManager.getConnection(DB_URL, ROOT_USER, ROOT_PASS);
+            serializableReader.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            serializableReader.setAutoCommit(false);
+            Statement serializableStatement = serializableReader.createStatement();
+            ResultSet serialalizableSet = serializableStatement.executeQuery("SELECT * FROM employees");
+
+            Connection serializableWriter = DriverManager.getConnection(DB_URL, ROOT_USER, ROOT_PASS);
+            serializableWriter.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            serializableWriter.setAutoCommit(false);;
+            Statement serializableWriteStatment = serializableWriter.createStatement();
+            int rowsInserted = serializableWriteStatment.executeUpdate("Insert into employees values(52, 'Hercules', 'demi_god', 10000)");
         } catch(Exception exception) {
             System.out.println(exception.getMessage());
         }
