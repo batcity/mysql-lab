@@ -6,7 +6,7 @@ Each lab demonstrates a specific concept using **Java + Dockerized MySQL**.
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 ```bash
 git clone <repo-url>
@@ -22,7 +22,7 @@ mvn compile
 
 ## 📚 Labs
 
-### ✅ Indexing
+### Indexing
 
 * [Good Index Benchmark](./indexing/IndexBenchmark.java)
   *High-cardinality column (`name`) → index makes queries much faster.*
@@ -71,7 +71,7 @@ mysql-lab/
 
 ---
 
-## 🧠 What You’ll Learn
+## What You’ll Learn
 
 * How to measure and interpret **query performance**.
 * When and why indexes help (or hurt).
