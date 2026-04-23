@@ -4,7 +4,6 @@
 An interactive playground for learning **MySQL performance, features, and best practices**.  
 Each lab demonstrates a specific concept using **Java + Dockerized MySQL**.
 
----
 
 ## Quickstart
 
@@ -16,45 +15,32 @@ mvn compile
 ````
 
 * MySQL runs inside Docker (`labdb` database, user: `labuser` / pass: `labpass`).
-* Java programs connect to it using JDBC and measure performance.
+* Java programs connect to it using JDBC.
 
----
 
-## 📚 Labs
+## 📚 Topics
 
-### Indexing
+- [Indexing](./indexing/README.md)
+- [Isolation](./isolation_levels/README.md)
 
-* [Good Index Benchmark](./indexing/IndexBenchmark.java)
-  *High-cardinality column (`name`) → index makes queries much faster.*
-* [Bad Index Benchmark](./indexing/BadIndexBenchmark.java)
-  *Low-cardinality column (`department`) → index actually slows queries down.*
+## Further Reading:
 
-Run:
+- [MySQL Data type cheat sheet](https://github.com/batcity/high-level-design-lab/blob/main/cheat-sheets/mysql-data-type-cheat-sheet.md)
 
-```bash
-# Good index demo
-mvn exec:java -Dexec.mainClass="IndexBenchmark"
 
-# Bad index demo
-mvn exec:java -Dexec.mainClass="BadIndexBenchmark"
-```
-
-📖 [Indexing README](./indexing/README.md)
-
----
 
 ### 🔜 Coming Soon
 
 I'll be adding labs for:
 
+* **Views**
 * **Joins & query plans**
-* **Transactions & isolation levels**
+* **Transactions**
 * **Deadlocks & locks**
 * **Stored procedures**
 * **Partitioning**
 * **Replication basics**
-
----
+* **MySQL Document store**
 
 ## 🏗️ Structure
 
@@ -63,13 +49,8 @@ mysql-lab/
 ├── docker-compose.yml   # MySQL in Docker
 ├── pom.xml              # Maven project setup
 ├── indexing/            # Index-related lab
-│   ├── IndexBenchmark.java
-│   ├── BadIndexBenchmark.java
-│   └── README.md
-└── ... more labs coming soon ...
+└── ...
 ```
-
----
 
 ## What You’ll Learn
 
