@@ -17,6 +17,11 @@ mvn compile
 * MySQL runs inside Docker (`labdb` database, user: `labuser` / pass: `labpass`).
 * Java programs connect to it using JDBC.
 
+P.S You can use the following command to run mysql queries on your terminal
+```
+docker exec -it mysql-lab mysql -u labuser -plabpass labdb
+```
+
 
 ## 📚 Topics
 
